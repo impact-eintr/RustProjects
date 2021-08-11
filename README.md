@@ -186,7 +186,7 @@ fn main() {
 |16|0xff|
 |8|0o77|
 |2|0b1111_0000|
-|Byte(u8 olny|b'A|
+|Byte(u8 olny|b'A'|
 
 - 除了byte类型外 所有的数值字面值都允许使用类型后缀
 - 整数默认类型就是i32
@@ -211,7 +211,7 @@ fn main() {
 }
 
 ```
-  
+
 #### 浮点类型(IEEE-754)
 - f32
 - f64 (默认类型 精度高 速度不慢)
@@ -269,8 +269,125 @@ fn main() {
 > 数组的作用
 
 **数组放在栈上**
-  
+
 > 越界检查
 
 rust 会在编译和运行时进行越界检查 panic
-  
+
+### 函数
+- Rust是一个基于表达式的语言
+
+``` rust
+fn main() {
+    test_function();
+}
+
+fn test_function() {
+    println!("Tis is another function")
+}
+```
+
+``` rust
+fn main() {
+    test_function(5)
+}
+
+fn test_function(x : i32) {
+    println!("Tis is another function, The value of x is {}", x)
+}
+
+```
+
+
+``` rust
+fn main() {
+    test_function();
+}
+
+fn test_function() {
+    let x = 5;
+
+    let y = {
+        let x = 1;
+        x + 3;
+    };
+
+    println!("The value of ty is {}", y);
+}
+
+```
+
+``` bash
+error[E0277]: `()` doesn't implement `std::fmt::Display`
+  --> src/main.rs:13:39
+   |
+13 |     println!("The value of ty is {}", y);
+   |                                       ^ `()` cannot be formatted with the default formatter
+   |
+
+```
+
+> `()` 是一种类型 唯一的值就是`()`
+
+#### 返回值
+
+``` rust
+fn main() {
+    println!("{}",test_function());
+}
+
+fn test_function() -> i32{
+    5
+}
+
+```
+
+> 以下的写法是不被允许的
+``` rust
+fn main() {
+    println!("{}",test_function());
+}
+
+fn test_function() -> i32{
+    5;
+}
+
+
+```
+
+``` bash
+fn main() {
+    println!("{}",test_function());
+}
+
+fn test_function() -> i32{
+    5;
+}
+
+```
+
+``` rust
+fn main() {
+    println!("{} 看了视频：“嗯，和在家里一样”",test_function());
+}
+
+fn test_function() -> char {
+    '👽'
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
