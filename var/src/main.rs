@@ -1,7 +1,7 @@
 fn main() {
-    println!("{} 看了视频：“嗯，和在家里一样”",test_function());
-}
+    let condition = true;
 
-fn test_function() -> char {
-    '👽'
+    let number = if condition { 5 } else {6};
+
+    println!("The value of number is: {}", number);
 }
