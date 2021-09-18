@@ -1,7 +1,18 @@
 fn main() {
-    let condition = true;
+    let s1 = String::from("Hello");
+    take_owership(s1);
+    println!("{}", s1);
+    let x = 6;
 
-    let number = if condition { 5 } else {6};
+    makes_copy(x);
+    println!("{}", x)
 
-    println!("The value of number is: {}", number);
+}
+
+fn take_owership(some_string: String) {
+    println!("{}", some_string);
+}
+
+fn makes_copy(some_number: i32) {
+    println!("{}", some_number);
 }

@@ -392,6 +392,356 @@ fn main() {
 
 
 
+``` rust
+fn main() {
+    let mut counter = 0;
+
+    let result = loop {
+        counter += 1;
+
+        if counter == 10 {
+            break counter * 2;
+        }
+    };
+    println!("The result is: {}", result);
+}
+
+```
+
+``` rust
+fn main() {
+    let mut number = 3;
+
+    while number != 0 {
+        println!("{}!", number);
+        number = number -1;
+    }
+
+    println!("The result is: {}", number);
+}
+
+```
+
+
+``` rust
+fn main() {
+    let a = [10, 20, 30, 40, 50];
+    for element in a.iter() {
+        println!("The value is: {}", element);
+    }
+}
+
+```
+
+### 使用for循环遍历集合
+- 可以使用while或loop来遍历，但是易错且低效
+- 使用for循环更简洁紧凑，它可以针对集合中的每个元素来执行一些代码
+- 由于for循环的安全、简洁性，所以它在Rust里用的最多
+
+``` rust
+fn main() {
+    for number in (1..4).rev() {
+        println!("{}!", number);
+    }
+    println!("END!")
+}
+
+```
+
+# 所有权
+- 所有权是Rust最独特的特性，它让Rust无需GC就可以保证内存安全。
+- 所有程序在运行时都必须管理计算机内存的方式
+  - 有些语言有垃圾收集机制，在程序运行时，他们会不断地寻找不再使用的内存。
+  - 在其他语言中，程序员必须显式地分配和释放内存
+- Rust采用了第三种方式
+  - 内存是通过一个所有权来管理的，其中包含一组编译器在编译时检查的规则。
+  - 当程序运行时，所有权特性不会减慢程序的运行速度。
+
+## Stack vs Heap
+- 在像Rust这样的系统级编程里，一个值是在stack上还是在heap上对语言的行为和你为什么要做某些决定是有更大的影响的
+
+- Stack按值的接收顺序来存储，按相反的顺序将它们移除
+  - 添加数据叫做压入栈
+  - 移除数据叫做弹出栈
+- 所有存储在stack上的数据必须拥有已知的固定的大小
+  - 编译时大小未知的数据或者运行时大小可能发生变化的数据必须存放在heap上
+- Heap内存组织性差一些
+  - 当你把数据放在heap时，你会请求一定数量的空间
+  - 操作系统在heap里找到一块足够大的空间，把它标记为在用，并返回一个指针，也就是这个空间的地址。
+  - 这个过程叫做在heap上进行分配，有时仅仅称为`分配`
+
+- 把值压到stack上不叫分配
+- 因为指针是已知固定大小的，可以把指针存放到stack上
+  - 但如果想要实际数据，必须使用指针来定位
+- 把数据压到stack上要比heap上分配快的多
+  - 因为操作系统不需要寻找用来存储新数据的空间，那个位置永远在stack的顶端。
+- 在heap上分配空间需要要做更多的工作
+  - 操作系统首先需要找到一个足够大的空间来存放数据，然后要做好记录方便下次分配
+
+### 访问数据
+- 访问heap中的数据要比访问stack中的数据慢，因为需要通过指针才能找到heap中的数据
+  - 对于现代的处理器来说，由于缓存的缘故，如果指令在内存中跳转的次数越少，那么速度就越快
+- 如果数据存放的距离比较近，那么处理器的处理速度就会更快一些(stack)上
+- 如果数据之间的距离比较远，那么处理速度就会慢一些(heap)
+  - 在heap上分配大量空间也是需要时间的
+
+### 函数调用
+- 当你的代码调用函数时，值被传入到函数(也包括指向heap的指针)。函数本地的变量被压到stack上。当函数结束后，这些值会从strack上弹出。
+
+### 所有权存在的原因
+- 所有权解决的问题
+  - 跟踪代码的那些部分正在使用heap的那些数据
+  - 最小化heap上的重复数据
+  - 清理heap上未使用的数据以避免空间不足
+- 一旦我们明白了所有权，那么就不需要经常去想stack或heap了。
+- 单数知道管理heap数据是所有权存在的原因，这有助于解释它为什么会这样工作。
+
+### 所有权规则
+- 每个值都有一个变量，这个变量是该值的所有者
+- 每个值同时只能有一个所有者
+- 当所有者超出作用域(scope)时，该值将被删除
+
+``` rust
+fn test() {
+    // s不可用
+    let s = "hello"; // s可用
+    // 可以对s进行相关操作
+    println!("{}", s)
+} // s作用域到此结束，s不可再用
+
+```
+
+### String类型
+- String比那些基础标量数据类型更复杂。
+- 字符串字面量:程序里手写的那些字符串值。它们是不可变的。
+- Rust的String类型在heap上分配，能够存储在编译阶段未知数据量的文本。
+
+``` rust
+fn create_string() {
+    let mut s = String::from("Hello");
+
+    s.push_str(", World");
+
+    println!("{}", s)
+}
+
+fn main() {
+    create_string();
+}
+
+```
+
+
+## 内存和分配
+- 字符串字面值，在编译时就知道他的内容了，其文本内容直接被硬编码到最终的可执行文件中
+  - 速度快、高效。是因为其不可变性。
+  
+- String类型，为了支持可变性，需要在heap上分配内存来保存编译时未知的文本内容
+  - 操作系统必须在运行时来请求内存
+    - 这布通过调用String::from来实现
+  - 当用完String之后，需要使用某种方式将内存返回给操作系统 
+    - 这步，在拥有GC的语言中，GC会跟踪并清理不再使用的内存
+    - 没有GC,就需要我们去识别内存何时不再使用，并调用代码将它返回
+      - 如果忘了浪费内存
+      - 如果提前做了，变量非法
+      - 如果做了两次，同样不允许
+- **Rust采用了不同的方式， 对于某个值来说，当拥有它的变量走出作用域范围时，内存会立即自动的还给操作系统**
+- drop函数
+
+### 变量与数据交互的方式: Move 移动
+**多个变量可以与同一个数据使用一种独特的方式来交互 Move**
+
+- 整数等已知且固定大小的简单的值被压到stack中
+- String等复杂类型数据，会发生变量移动
+
+``` rust
+
+fn main() {
+    let s1 = String::from("Hello");
+    let s2 = s1;
+
+    println!("{}, {}", s1, s2)
+}
+
+```
+
+``` bash
+error[E0382]: borrow of moved value: `s1`
+  --> src/main.rs:14:24
+   |
+11 |     let s1 = String::from("Hello");
+   |         -- move occurs because `s1` has type `String`, which does not implement the `Copy` trait
+12 |     let s2 = s1;
+   |              -- value moved here
+13 |
+14 |     println!("{}, {}", s1, s2)
+   |                        ^^ value borrowed here after move
+
+error: aborting due to previous error
+
+For more information about this error, try `rustc --explain E0382`.
+error: could not compile `var`
+
+
+
+```
+
+- 为了保证内存安全：
+  - Rust没有尝试复制被分配的内存
+  - Rust让s1失效
+    - 当s1离开作用域的时候，Rust不需要释放任何东西
+    
+#### 移动与拷贝
+- 浅拷贝
+- 深拷贝
+- 你也许会将复制指针、长度、容量(上面代码中`let s2 = s1`)，视作浅拷贝，但由于Rust让s1失效了，所以我们使用了一个新的术语：Move
+- **隐含的一个设计原则 Rust不会自动创建数据的深拷贝**
+  - 就运行时性能而言，任何自动赋值的操作搜是廉价的
+
+### 变量与数据的交互方式 克隆
+- 如果真想对heap上的String数据进行深度拷贝，而不仅仅是stack上的数据，可以使用clone方法
+
+``` rust
+fn main() {
+    create_string();
+    let s1 = String::from("Hello");
+    let s2 = s1.clone();
+
+    println!("{}, {}", s1, s2)
+}
+
+```
+
+### Copy trait 
+- Copy trait 可以用于像整数这样完全存放在stack上的类型
+- 如果一个类型实现了Copy这个trait 那么就的变量在赋值后仍然可用
+- 如果一个类型或者该类型的一部分实现了Drop trait，那么Rust不允许让它再去实现Copy trait
+
+#### 一些拥有Copy trait的类型
+- 任何简单标量的组合类型都是可以Copy的
+- 任何需要分配内存或某种资源的都不是Copy的
+- 一些拥有Copy trait的类型
+  - 所有的整数类型，例如u32
+  - bool类型
+  - char
+  - 所有的浮点类型，例如f64
+  - Tuple(元组)，如果其所有的字段都是Copy的
+    - (i32,i32)是
+    - (i32,String)不是
+
+
+### 所有权与函数
+
+``` rust
+fn main() {
+    let s1 = String::from("Hello");
+    take_owership(s1);
+    //println!("{}", s1);
+    let x = 6;
+
+    makes_copy(x);
+    println!("{}", x)
+
+}
+
+fn take_owership(some_string: String) {
+    println!("{}", some_string);
+}
+
+fn makes_copy(some_number: i32) {
+    println!("{}", some_number);
+}
+
+```
+
+被注释的行如果执行就会报错
+``` bash
+error[E0382]: borrow of moved value: `s1`
+ --> src/main.rs:4:20
+  |
+2 |     let s1 = String::from("Hello");
+  |         -- move occurs because `s1` has type `String`, which does not implement the `Copy` trait
+3 |     take_owership(s1);
+  |                   -- value moved here
+4 |     println!("{}", s1);
+  |                    ^^ value borrowed here after move
+
+error: aborting due to previous error
+
+For more information about this error, try `rustc --explain E0382`.
+error: could not compile `var`
+
+```
+
+### 返回值与作用域
+
+- 函数在返回值的过程中，同样也会发生所有权的转移
+
+``` rust
+fn main() {
+    let s1 = gives_ownership();
+
+    let s2 = String::from("hello");
+
+    let s3 = takes_and_gives_back(s2);
+
+}
+
+fn gives_ownership() -> String {
+    let some_string = String::from("hello");
+    some_string
+}
+
+fn takes_and_gives_back(a_string: String) -> String {
+    a_string
+}
+
+```
+
+
+- 一个变量的所有权总是遵循同样的模式：
+  - 把一个值赋给其他变量时就会发生移动
+  - 当一个包含heap数据的变量离开作用域时，他的值就会被drop函数清理，除非数据的所有权移动到另一个变量上了
+  
+### 引用和借用
+
+``` rust
+fn main() {
+    let s1 = String::from("Hello");
+    let len = calcute_length(&s1);
+
+    println!("The length of '{}' is {}", s1, len);
+}
+
+fn calcute_length(s: &String) -> usize {
+    s.len()
+}
+
+```
+
+- 参数的类型是&String 而不是 String
+- & 符号就表示引用：允许你引用某些值而不屈的其所有权
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
