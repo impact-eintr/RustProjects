@@ -1,4 +1,4 @@
-# RustProjects
+# Rust学习笔记
 
 ```rust
 use std::io; // prelude
@@ -722,33 +722,249 @@ fn calcute_length(s: &String) -> usize {
 - 参数的类型是&String 而不是 String
 - & 符号就表示引用：允许你引用某些值而不屈的其所有权
 
+### 借用
+- 我们把引用作为函数参数这个行为叫做借用
+- 不可以修改借用的东西
+- 和变量一样，引用默认也是不可变的
+
+### 可变引用
+
+``` rust
+fn main() {
+    let mut s1 = String::from("Hello");
+    let len = calcute_length(&mut s1);
+
+    println!("The length of '{}' is {}", s1, len);
+}
+
+fn calcute_length(s: &mut String) -> usize {
+    s.push_str("world");
+    s.len()
+}
+
+```
+
+#### 一个重要限制
+**可变引用有一个重要的限制：在特定的作用域内，对某一块数据，只能有一个可变的引用。**
+
+``` rust
+fn main() {
+
+    let mut s = String::from("Hello");
+    let s1 = &mut s;
+    let s2 = &mut s;
+
+    println!("The length of '{}' is {}.", s1, s2);
+}
+
+```
+
+
+``` rust
+error[E0499]: cannot borrow `s` as mutable more than once at a time
+ --> src/main.rs:5:14
+  |
+4 |     let s1 = &mut s;
+  |              ------ first mutable borrow occurs here
+5 |     let s2 = &mut s;
+  |              ^^^^^^ second mutable borrow occurs here
+6 |
+7 |     println!("The length of '{}' is {}.", s1, s2);
+  |                                           -- first borrow later used here
+
+error: aborting due to previous error
+
+```
+
+这样做的好处是可以在编译时防止数据竞争
+
+以下三种行为会发生数据竞争:
+- 两个或多个指针同时访问同一个数据
+- 至少有一个指针用于写入数据
+- 没有使用任何机制来同步对数据的访问
+
+**可以通过创建新的作用域，来允许非同时地创建多个可变引用**
+
+``` rust
+fn main() {
+
+    let mut s = String::from("Hello");
+    {
+        let s1 = &mut s;
+    println!("The length of '{}' is {}.", s1, s1.len());
+    }
+    let s2 = &mut s;
+
+    println!("The length of '{}' is {}.", s2, s2.len());
+}
+
+```
+
+
+### 另一个限制
+- **不可以同时拥有一个可变引用和一个不可变引用**
+  - 多个不可变引用是可以的
+
+``` rust
+fn main() {
+
+    let mut s = String::from("Hello");
+    let s1 = &s;
+    let s2 = &s;
+    let r1 = &mut s;
+
+
+    println!("{} {} {}", s1,s2, r1);
+}
+
+```
+
+``` rust
+error[E0502]: cannot borrow `s` as mutable because it is also borrowed as immutable
+ --> src/main.rs:6:14
+  |
+4 |     let s1 = &s;
+  |              -- immutable borrow occurs here
+5 |     let s2 = &s;
+6 |     let r1 = &mut s;
+  |              ^^^^^^ mutable borrow occurs here
+...
+9 |     println!("{} {} {}", s1,s2, r1);
+  |                          -- immutable borrow later used here
+
+error: aborting due to previous error
+
+```
+
+
+### 悬空指针
+- 一个指针引用了我内存中的某个地址，而这块内存可能已经释放并分配给其他人用了
+- 在Rust中，编译器保证引用永远都不是悬空引用
+  - 如果你引用了某些数据，编译器将保证在引用离开作用域之前不会离开作用域
+  
+  
+  
+  
+``` rust
+fn main() {
+    let r = dangle();
+}
+
+fn dangle() -> &String {
+    let s = String::from("hello");
+    &s
+}
+
+```
+
+``` rust
+error[E0106]: missing lifetime specifier
+ --> src/main.rs:5:16
+  |
+5 | fn dangle() -> &String {
+  |                ^ expected named lifetime parameter
+  |
+  = help: this function's return type contains a borrowed value, but there is no value for it to be borrowed from
+help: consider using the `'static` lifetime
+  |
+5 | fn dangle() -> &'static String {
+  |                ^^^^^^^^
+
+error: aborting due to previous error
+```
+
+
+### 引用的规则
+- 在任何给定的时刻，只能满足下列条件之一
+  - 一个可变的引用
+  - 任意数量不可变的引用
+- 引用必须一直有效
+
+
+## 切片
+- Rust的另一种不持有所有权的数据类型： 切片
+- 一道题，编写一个函数
+  - 它接收字符串作为参数
+  - 返回他在这个字符串中找到的第一个单词
+  - 如果函数没找到任何空格，那么整个字符串就被返回
+
+``` rust
+fn main() {
+    let mut s = String::from("Hello world");
+    let word_index = first_world(&s);
+
+    s.clear();
+    println!("{}", word_index);
+}
+
+
+fn first_world(s: &String) -> usize {
+    let bytes = s.as_bytes();
+
+    for (i, &item) in bytes.iter().enumerate() {
+        if item == b' ' {
+            return i;
+        }
+    }
+    s.len()
+}
+
+```
+
+
+``` rust
+fn main() {
+    let s = String::from("Hello world");
+
+    let h = &s[0..5];
+    let w = &s[6..11];
+
+    // 或者也可以这样写
+    let h = &s[..5];
+    let w = &s[6..];
+    
+    println!("{}, {}", h, w)
+
+}
+
+```
 
 
 
+``` rust
+fn main() {
+    let mut s = String::from("hello world");
+    let word_index = first_world(&s);
 
+    s.clear();
+    println!("{}", word_index)
+}
 
+fn first_world(s: &String) -> &str {
+    let bytes = s.as_bytes();
+    for (i, &item) in bytes.iter().enumerate() {
+        if item == b' ' {
+            return &s[..i];
+        }
+    }
+    &s[..]
+}
 
+```
 
+``` rust
+error[E0502]: cannot borrow `s` as mutable because it is also borrowed as immutable
+ --> src/main.rs:5:5
+  |
+3 |     let word_index = first_world(&s);
+  |                                  -- immutable borrow occurs here
+4 |
+5 |     s.clear();
+  |     ^^^^^^^^^ mutable borrow occurs here
+6 |     println!("{}", word_index)
+  |                    ---------- immutable borrow later used here
 
+For more information about this error, try `rustc --explain E0502`.
+error: could not compile `slice` due to previous error
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```
