@@ -1,17 +1,7 @@
 fn main() {
-    let mut s = String::from("hello world");
-    let word_index = first_world(&s);
-
-    s.clear();
-    println!("{}", word_index)
-}
-
-fn first_world(s: &String) -> &str {
-    let bytes = s.as_bytes();
-    for (i, &item) in bytes.iter().enumerate() {
-        if item == b' ' {
-            return &s[..i];
-        }
+    let a = [1, 2, 3, 4, 5];
+    let slice = &a[1..3];
+    for (_i, item) in slice.iter().enumerate() {
+    println!("{}",item);
     }
-    &s[..]
 }

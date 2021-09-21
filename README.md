@@ -74,15 +74,15 @@ func main() {
 
 ```
 
-## Rust常识
+# Rust常识
 
-### 变量与可变性
+## 变量与可变性
 
 - 声明变量使用`let`关键字
 - 默认情况下，变量是不可变的(Immutable)
 - 声明变量时 在变量前加上`mut` 就可以使变量可变
 
-### 常量与变量
+## 常量与变量
 - 常量 常量在绑定值以后也是不可变的， 但它与不可变的变量有很多区别
   - 不可以使用`mut` 常量永远不可变
   - 声明常量使用`const`关键字 **其类型必须被标注**
@@ -96,7 +96,7 @@ func main() {
 const MAX_POINTS:u32 = 100_000;
 ```
 
-### Shadowing(屏蔽)
+## Shadowing(屏蔽)
 
 - 可以使用相同名字声明新的变量 新的变量就会屏蔽(shadow)之前声明的同名变量
 
@@ -108,7 +108,7 @@ fn main() {
 }
 ```
 
-- shadow和吧变量标记为`mut`是不一样的：
+- shadow和把变量标记为`mut`是不一样的：
   - 如果不是用let关键字 那么重新给非mut的变量赋值会导致编译时错误
   - 而如果使用let声明的同名新变量 也是不可变的
   - **使用let声明的同名新变量 它的类型可以与之前的不同**
@@ -130,7 +130,7 @@ fn main() {
 
 ```
 
-### 数据类型
+## 数据类型
 - 标量 和 复合类型
 - Rust是静态类型 在编译期间必须知道所有变量的类型
   - 基于使用的值 编译器通常能推断出它的具体类型
@@ -239,7 +239,7 @@ fn main() {
   - Tuple
   - Array
 
-#### Tuple
+### Tuple
 - 可以将多个类型的多个值放到一个类型中
 - Tuple的长度是固定的 一旦声明就无法改变
 
@@ -251,7 +251,7 @@ fn main() {
 
 ```
 
-#### 数组
+### 数组
 - 数组也可以将多个值放到一个类型里
 - 数组中每个元素的类型必须相同
 - 数组的长度也是固定的
@@ -274,7 +274,7 @@ fn main() {
 
 rust 会在编译和运行时进行越界检查 panic
 
-### 函数
+## 函数
 - Rust是一个基于表达式的语言
 
 ``` rust
@@ -329,7 +329,7 @@ error[E0277]: `()` doesn't implement `std::fmt::Display`
 
 > `()` 是一种类型 唯一的值就是`()`
 
-#### 返回值
+### 返回值
 
 ``` rust
 fn main() {
@@ -376,8 +376,8 @@ fn test_function() -> char {
 }
 ```
 
-
-### if else
+# 控制结构
+## if else
 
 ``` rust
 fn main() {
@@ -703,7 +703,7 @@ fn takes_and_gives_back(a_string: String) -> String {
   - 把一个值赋给其他变量时就会发生移动
   - 当一个包含heap数据的变量离开作用域时，他的值就会被drop函数清理，除非数据的所有权移动到另一个变量上了
   
-### 引用和借用
+## 引用和借用
 
 ``` rust
 fn main() {
@@ -744,7 +744,7 @@ fn calcute_length(s: &mut String) -> usize {
 
 ```
 
-#### 一个重要限制
+### 一个重要限制
 **可变引用有一个重要的限制：在特定的作用域内，对某一块数据，只能有一个可变的引用。**
 
 ``` rust
@@ -841,9 +841,6 @@ error: aborting due to previous error
 - 一个指针引用了我内存中的某个地址，而这块内存可能已经释放并分配给其他人用了
 - 在Rust中，编译器保证引用永远都不是悬空引用
   - 如果你引用了某些数据，编译器将保证在引用离开作用域之前不会离开作用域
-  
-  
-  
   
 ``` rust
 fn main() {
@@ -968,3 +965,325 @@ For more information about this error, try `rustc --explain E0502`.
 error: could not compile `slice` due to previous error
 
 ```
+
+#### 字符串字面量是切片
+- 字符串字面值是直接存储在二进制出程序中
+- let s = "Hello, World";
+- 变量s的类型是&str, 所以字符串字面值也是不可变的
+
+#### 将字符串切片作为参数传递
+- `fn first_world(s: &String) -> &str`
+- 有经验的Rust开发者会采用&str作为参数类型，因为这样就可以同时接收String和&st类型的参数了
+  - 使用&str直接调用该函数
+  - 使用String 可以创建一个完整的String切片来调用该函数
+- 定义函数时使用字符串切片来代替字符串引用会使我们的API更加通用，且不会有任何功能性损失
+
+
+``` rust
+fn main() {
+    let s = String::from("hello world");
+    let word_index = first_world(&s[..]);
+
+    println!("{}", word_index)
+}
+
+fn first_world(s: &str) -> &str {
+    let bytes = s.as_bytes();
+    for (i, &item) in bytes.iter().enumerate() {
+        if item == b' ' {
+            return &s[..i];
+        }
+    }
+    &s[..]
+}
+
+```
+
+### 其他类型的切片
+
+``` rust
+fn main() {
+    let a = [1, 2, 3, 4, 5];
+    let slice = &a[1..3];
+    for (_, item) in slice.iter().enumerate() {
+    println!("{}",item);
+    }
+}
+
+```
+
+
+# struct
+## 定义并实例化struct
+- struct 结构体
+  - 自定义的数据类型
+  - 为相关联的值命名，打包 => 有意义的组合
+
+``` rust
+struct User {
+    username: String,
+    email: String,
+    sign_in_count: u64,
+    active: bool,
+}
+
+fn main() {
+    let mut user = User{
+        email: String::from("66666666@gmail.com"),
+        username: String::from("eintr"),
+        active: true,
+        sign_in_count:1,
+    };
+    user.active = false;
+    println!("Hello, {}", user.username);
+}
+
+```
+
+**注意，一旦struct是可变的，那么实例中的所有字段都是可变的**
+
+
+### Struct作为函数的返回值
+
+``` rust
+struct User {
+    username: String,
+    email: String,
+    sign_in_count: u64,
+    active: bool,
+}
+
+fn main() {
+    let mut user = new_user(&String::from("23333333@gmail.com")[..], &String::from("Eintr")[..]);
+    user.active = false;
+    println!("Hello, {}", user.username);
+}
+
+fn new_user(email: &str, username: &str) -> User {
+    User {
+        email.to_string(),
+        username.to_string(),
+        active:true,
+        sign_in_count:1,
+    }
+}
+
+```
+
+### Struct更新语法
+
+``` rust
+struct User {
+    username: String,
+    email: String,
+    sign_in_count: u64,
+    active: bool,
+}
+
+fn main() {
+    let user1 = new_user(&String::from("23333333@gmail.com")[..], &String::from("Eintr")[..]);
+    let user2 = User {
+        username:String::from("eintr"),
+        ..user1
+    };
+    println!("Hello, {} and {}", user1.username, user2.username);
+}
+
+fn new_user(email: &str, username: &str) -> User {
+    User {
+        email:email.to_string(),
+        username:username.to_string(),
+        active:true,
+        sign_in_count:1,
+    }
+}
+
+```
+
+## Tuple struct
+- 可定义类似tuple的struct，叫做tuple struct
+  - Tuple struct 整体有个名，但里面的元素没有名
+  - 适用：想给整个tuple起名，并让它不同于其他tuple,而且又不需要给每个元素起名
+- 定义tuple struct:使用struct关键字，后边是名字，以及里面元素的类型
+
+
+``` rust
+fn main() {
+    struct Color(i32, i32, i32);
+    struct Point(i32, i32, i32);
+    let black = Color(0, 0, 0);
+    let origin = Point(0, 0, 0);
+}
+
+```
+
+## Unit-Like Struct (没有任何字段)
+- 可以定义没有任何字段的struct，叫做Unit-Like struct 因为与`()` 单元类型类似
+- 适用于需要在某个类型上实现某个trait，但是在里面又没有想要存储的数据
+
+## struct数据的所有权
+``` rust
+struct User {
+    username: String,
+    email: String,
+    sign_in_count: u64,
+    active: bool,
+}
+
+```
+
+- 这里的字段使用了String而不是&str
+  - 该struct实例拥有其所有的数据
+  - 只要struct实例是有效的，那么里面的字段数据也是有效的
+- struct里也可以存放引用，但这需要使用生命周期
+  - 生命周期保证只要struct实例是有效的，那么里面的引用也是有效的
+
+``` rust
+struct User {
+    username: &str,
+}
+
+fn main() {
+    let user = User{
+      username: "eintr",
+    };
+}
+
+```
+
+``` rust
+error[E0106]: missing lifetime specifier
+ --> src/main.rs:2:15
+  |
+2 |     username: &str,
+  |               ^ expected named lifetime parameter
+  |
+help: consider introducing a named lifetime parameter
+  |
+1 | struct User<'a> {
+2 |     username: &'a str,
+  |
+
+```
+
+
+## Struct的一个例子
+
+``` rust
+#[derive(Debug)]
+struct Rectangle {
+    width:u32,
+    length:u32,
+}
+
+fn area(rect: &Rectangle) -> u32 {
+    rect.width * rect.length
+}
+
+fn main() {
+    let rect = Rectangle {
+        width: 30,
+        length:50,
+    };
+    println!("{}", area(&rect));
+    println!("{:#?}", rect);
+}
+
+```
+
+## Struct 方法
+
+``` rust
+#[derive(Debug)]
+struct Rectangle {
+    width:u32,
+    length:u32,
+}
+
+impl Rectangle {
+    fn area(&self) -> u32 {
+        self.width * self.length
+    }
+}
+
+fn main() {
+    let rect = Rectangle {
+        width: 30,
+        length:50,
+    };
+    println!("{}", rect.area());
+    println!("{:#?}", rect);
+}
+
+```
+
+- 在impl块里定义方法
+- 方法的第一个参数可以之&self，也可以是获得其所有权或可变借用。和其他参数一样
+- 更好的代码组织
+
+### 方法调用的运算符
+- C/C++ pniect->something() 和 (*object).something()一样
+- Rust没有-> 运算符
+- Rust会自动引用或解引用
+  - 在调用方法时就会发生这种行为
+- 在调用方法时，Rust根据情况自动添加&，&mut或者*，以便object可以匹配方法的签名
+- 下面两行代码的效果相同
+  - p1.distance(&p2)
+  - (&p1).distance(&p2)
+
+``` rust
+#[derive(Debug)]
+struct Rectangle {
+    width:u32,
+    length:u32,
+}
+
+impl Rectangle {
+    fn area(&self) -> u32 {
+        self.width * self.length
+    }
+
+    fn can_hold(&self, other: &Rectangle) -> bool {
+        self.width > other.width && self.length > other.length
+    }
+
+
+}
+
+fn main() {
+    let rect = Rectangle {
+        width: 30,
+        length:50,
+    };
+    let test = Rectangle {
+        width: 20,
+        length: 49,
+    };
+    if rect.can_hold(&test) {
+        println!("{:#?}", test);
+    }
+    println!("{}", rect.area());
+    println!("{:#?}", rect);
+}
+
+```
+
+### 关联函数
+- 可以在impl块里定义不把self作为第一个参数的函数，它们叫关联函数(不是方法)
+  - 例如String::from()
+- 关联函数通常用于构造器
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
