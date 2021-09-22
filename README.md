@@ -1272,9 +1272,654 @@ fn main() {
 - 可以在impl块里定义不把self作为第一个参数的函数，它们叫关联函数(不是方法)
   - 例如String::from()
 - 关联函数通常用于构造器
+- ::符号
+  - 关联函数
+  - 模块创建的命名空间
+``` rust
+#[derive(Debug)]
+struct Rectangle {
+    width:u32,
+    length:u32,
+}
+
+impl Rectangle {
+    fn area(&self) -> u32 {
+        self.width * self.length
+    }
+
+    fn can_hold(&self, other: &Rectangle) -> bool {
+        self.width > other.width && self.length > other.length
+    }
+    // 关联函数
+    fn square(size: u32) -> Rectangle {
+        Rectangle{
+            width:size,
+            length:size,
+        }
+    }
+}
+
+fn main() {
+    let rect = Rectangle {
+        width: 30,
+        length:50,
+    };
+    let test= Rectangle::square(20);
+
+    if rect.can_hold(&test) {
+        println!("{:#?}", test);
+    }
+    println!("{}", rect.area());
+    println!("{:#?}", rect);
+}
+
+```
+
+
+# 枚举与模式匹配
+## 定义枚举
+
+``` rust
+enum IpAddrKind{
+  v4,
+  v6,
+}
+```
+
+``` rust
+enum IpAddrKind {
+    V4,
+    V6,
+}
+
+fn main() {
+    let four = IpAddrKind::V4;
+    let six = IpAddrKind::V6;
+
+    route(four);
+    route(six);
+    route(IpAddrKind::V6);
+}
+
+fn route(_ip_kind: IpAddrKind) {
+    println!("Hello, world!");
+}
+
+```
+
+### 将数据附加到枚举的变体
+- `
+enum IpAddr {
+  V4(String),
+  V6(String),
+}
+`
+- 优点
+  - 不需要额外使用struct
+  - 每个变体可以拥有不同的类型以及关联的数据量
+
+``` rust
+enum IpAddrKind {
+    V4(u8, u8, u8, u8),
+    V6(String),
+}
+
+fn main() {
+    let four = IpAddrKind::V4(127,0,0,1);
+    let six = IpAddrKind::V6(String::from("::1"));
+
+}
+
+```
+
+
+## Option枚举
+- 在其他语言中
+  - Null是一个值，它表示”没有值“
+  - 一个变量可以处于两种状态：空值(null),非空
+- Null引用：Billion Dollar Mistake
+- Null的问题在于：当你尝试使用非NULL值那样使用Null值的时候，就会引起某种错误
+- Null的概念还是有用的，因某种原因而变为无效或缺失的值
+
+### Rust中类似Null概念的枚举
+- 定义在标准库中
+- `enum Option<T> {
+  Some(T),
+  None,}`
+
+``` rust
+fn main() {
+    let some_number = Some(5); // i32
+    let some_string = Some("A String"); // &str
+    let absent_number: Option<i32> = None; // 必须制指定类型
+    println!("Hello, world!");
+}
+
+```
+
+
+``` rust
+fn main() {
+    let x: i8 = 5;
+    let y:Option<i8> = Some(5);
+
+    let sum = x + y;
+}
+```
+
+
+``` rust
+error[E0277]: cannot add `Option<i8>` to `i8`
+ --> src/main.rs:5:17
+  |
+5 |     let sum = x + y;
+  |                 ^ no implementation for `i8 + Option<i8>`
+  |
+  = help: the trait `Add<Option<i8>>` is not implemented for `i8`
+
+
+```
+
+## 强大的控制流运算符 match
+- 允许一个值与一系列模式进行匹配，并执行匹配的模式对应的代码
+- 模式可以是字面值、变量名、通配符………
+
+``` rust
+enum Coin {
+    Penny,
+    Nickel,
+    Dime,
+    Quarter,
+}
+
+fn value_in_cents(coin: Coin) -> u8 {
+    match coin {
+        Coin::Penny => {
+            println!("test");
+            1
+        },
+        Coin::Nickel => 5,
+        Coin::Dime => 20,
+        Coin::Quarter => 25,
+    }
+}
+
+fn main() {
+    println!("Hello, {}!", value_in_cents(Coin::Penny));
+}
+
+```
+
+### 绑定值的模式
+- 匹配的分支可以绑定到被匹配对象的部分值
+  - 因此可以从enum变体中提取值
+
+``` rust
+#[derive(Debug)]
+enum UsState {
+    Alabama,
+    Alaska,
+}
+
+enum Coin {
+    Penny,
+    Nickel,
+    Dime,
+    Quarter(UsState),
+}
 
 
 
+fn value_in_cents(coin: Coin) -> u8 {
+    match coin {
+        Coin::Penny => {
+            println!("test");
+            1
+        },
+        Coin::Nickel => 5,
+        Coin::Dime => 20,
+        Coin::Quarter(state) => {
+            println!("A quarter from {:?}", state);
+            25
+        },
+    }
+}
+
+fn main() {
+    let c = Coin::Quarter(UsState::Alaska);
+    println!("Hello, {}!", value_in_cents(c));
+}
+
+```
+
+### 匹配Option<T>
+
+``` rust
+fn plus_one(x: Option<i32>) -> Option<i32> {
+    match x {
+        None => None,
+        Some(i) => Some(i + 1),
+    }
+}
+fn main() {
+    let five = Some(5);
+    let _ = plus_one(five);
+    let _ = plus_one(None);
+}
+
+```
+
+**match匹配必须穷举所有的可能**
+
+``` rust
+fn plus_one(x: Option<i32>) -> Option<i32> {
+    match x {
+        Some(i) => Some(i + 1),
+    }
+}
+fn main() {
+    let five = Some(5);
+    let _ = plus_one(five);
+    let _ = plus_one(None);
+}
+
+```
+
+
+``` rust
+error[E0004]: non-exhaustive patterns: `None` not covered
+   --> src/main.rs:2:11
+    |
+2   |     match x {
+    |           ^ pattern `None` not covered
+    |
+   ::: /home/eintr/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/option.rs:501:5
+    |
+501 |     None,
+    |     ---- not covered
+    |
+    = help: ensure that all possible cases are being handled, possibly by adding wildcards or more match arms
+    = note: the matched value is of type `Option<i32>`
+
+```
+
+
+## if let
+- 处理只关心一种匹配而忽略其他匹配的情况
+- 更少的代码，更少的缩进，更少的模板代码
+- 放弃了穷举的可能
+
+``` rust
+fn main() {
+    let mut v = Some(0u8);
+    match v {
+        Some(3) => println!("three"),
+        _ => println!("others"),
+    }
+
+    v = Some(3);
+
+    if let Some(3) = v {
+        println!("three");
+    } else {
+        println!("others");
+    }
+}
+
+```
+
+
+# Package, Crate, Module
+## Package Crate 定义Module
+- 代码组织主要包括
+  - 那些细节可以暴露，那些细节是私有
+  - 作用域内那些名称有效
+- 模块系统
+  - Package: Cargo的特性，让你构建、测试、共享crate
+  - Crate: 一个模块树，它可产生一个library 或 可执行文件
+  - Module: use: 让你控制代码的组织、作用域、私有路径
+  - Path: 为struct function 或 module等项命名的方式
+  
+``` bash
+.
+├── Cargo.toml
+└── src
+    └── main.rs
+
+```
+  
+``` toml
+[package]
+name = "package_eg"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+```
+ 
+### cargo的惯例
+- src/main.rs
+  - binary crate的crate root
+  - crate名与package名相同
+- src/lib.rs
+  - package包含一个library crate
+  - library crate 的crate roots
+  - crate名与package 名相同
+- Cargo把crate root 文件交给rustc来构建library或binary
+- 一个package可以同时包含src/main.rs和src/lib.rs
+  - 一个binary crate,一个library crate
+  - 名称与package名相同
+- 一个Package可以有多个binary crate
+  - 文件放在src/bin
+  - 每个文件都是单独的binary crate
+
+### Crate的作用
+- 将相关功能组合到一个作用域内，便于在项目间进行共享
+  - 防止冲突
+- 例如 rand crate 访问它的功能需要通过它的名字 rand
+
+### 定义module来控制作用域和私有性
+- Module
+  - 在一个crate中，将代码进行分组
+  - 增加可读性，易于复用
+  - 控制项目(item)的私有性。public、private
+- 建立module
+  - mod关键字
+  - 可嵌套
+  - 可包含其他项(struct enum 常量 trait 函数等)的定义
+
+``` rust
+mod front_of_hose {
+    mod hosting {
+        fn add_to_waitlist() {}
+        fn seat_at_table() {}
+    }
+
+    mod serving {
+        fn take_order() {}
+        fn serve_order() {}
+        fn take_payment() {}
+    }
+}
+
+```
+
+## Path
+
+``` rust
+fn serve_order() {}
+
+mod  back_of_house {
+    fn fix_incorrect_order() {
+        cook_order();
+        super::serve_order();
+        crate::serve_order();
+    }
+    fn cook_order() {}
+}
+
+```
+
+### pub struct
+- pub 放在 struct 前
+  - struct是公共的
+  - struct的字段默认是私有的
+- struct的字段需要单独设置成pub来变成公有
+
+``` rust
+mod back_of_house {
+    pub struct Breakfast {
+        pub toast: String,
+        seasonal_fruit: String,
+    }
+
+    impl Breakfast {
+        pub fn summer(toast: &str) -> Breakfast {
+            Breakfast {
+                toast: String::from(toast),
+                seasonal_fruit:  String::from("peaches"),
+            }
+        }
+    }
+}
+
+pub fn eat_at_restaurant() {
+    let mut meal = back_of_house::Breakfast::summer("Rye");
+    meal.toast = String::from("Wheat");
+    println!("I'd like {} toast please", meal.toast);
+    meal.seasonal_fruit = String::from("test");
+}
+
+```
+
+### Pub enum
+公共枚举里的所有变体都是公共的
+``` rust
+mod back_of_house {
+    pub struct Breakfast {
+        pub toast: String,
+        seasonal_fruit: String,
+    }
+
+    pub enum Appetizer {
+        Soup,
+        Salad,
+    }
+
+    impl Breakfast {
+        pub fn summer(toast: &str) -> Breakfast {
+            Breakfast {
+                toast: String::from(toast),
+                seasonal_fruit:  String::from("peaches"),
+            }
+        }
+    }
+}
+
+
+```
+
+## use关键字
+- 可以使用use关键字将路径导入到作用域内
+  - 仍遵守私有性规则，只有公共的部分引入才可以使用
+
+``` rust
+mod front_of_house {
+    pub mod hosting {
+        pub fn add_to_waitlist() {}
+    }
+}
+
+use crate::front_of_house::hosting;
+
+pub fn eat_at_restaurant() {
+    hosting::add_to_waitlist();
+    hosting::add_to_waitlist();
+    hosting::add_to_waitlist();
+}
+
+```
+
+### use的习惯用法
+- 函数：将函数的伏击模块引入作用域
+- struct enum 其他 指定完整路径(指定到本身)
+
+``` rust
+use std::collections::HashMap;
+
+fn main() {
+    let mut map = HashMap::new();
+    map.insert(1, 2);
+    println!("{:?}", map[&1]);
+}
+
+```
+
+
+``` rust
+use std::collections::HashMap;
+use std::fmt::Result;
+use std::io::Result as IOResult;
+
+fn f1() -> Result {}
+
+fn f2() -> IOResult {}
+
+fn main() {
+    let mut map = HashMap::new();
+    map.insert(1, 2);
+    println!("{:?}", map[&1]);
+
+}
+
+```
+
+### 使用pub use 重新导出名称
+- 使用use将路径导入到作用域内后，该名称在此作用域内是私有的。
+- pub use 重导出
+  - 将条目引入作用域
+  - 该条目了一被外部代码引入到他们的作用域
+
+``` toml
+[package]
+name = "use_eg"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rand = "0.5.5"
+
+```
+
+``` rust
+use rand::Rng;
+
+fn main() {
+
+}
+
+```
+
+- 标准库也被当作外部包
+  - 不需要修改CArgo.toml来包含std
+  - 需要使用use将std中的特定条目引入当前作用域
+
+### 嵌套引用
+
+``` rust
+use std::{cmp::Ordering, io}
+
+fn main() {}
+```
+
+``` rust
+use std::io::{self, Write};
+
+fn main() {}
+```
+
+
+
+## 将模块内容移动到其他文件
+- 模块定义时，如果模块名后边是`;`，而不是代码块
+  - Rust会从模块同名的文件中加载内容
+  - 模块树的结构不会发生变化
+- 随着模块逐渐变大，该技术让你可以把模块的内容移动到其他文件中
+
+# 常用的集合
+## Vector
+- Vector<T> 叫做vector
+  - 由标准库提供
+  - 可存储多个值
+  - 只能存储相同类型的数据
+  - 值在内寻中连续存放
+
+``` rust
+fn main() {
+    let mut v1: Vec <i32> = Vec::new();
+    let v2 = vec![1, 2, 3];
+
+    v1.push(22);
+}
+
+```
+
+``` rust
+fn main() {
+    let v = vec![1, 2, 3, 4, 5];
+    let third: &i32 = &v[2];
+    println!("The third element is {}", third);
+
+    match v.get(2) {
+        Some(third) => println!("{}", third),
+        None => println!("There is no third element"),
+    }
+}
+
+```
+
+``` rust
+fn main() {
+    let v = vec![1, 2, 3, 4, 5];
+    match v.get(100) {
+        Some(third) => println!("{}", third),
+        None => println!("There is no third element"),
+    }
+}
+```
+
+## String
+
+
+## HashMap
+
+# 
+
+
+
+# 
+
+
+# 
+
+
+# 
+
+
+# 
+
+
+# 
+
+
+# 
+
+
+
+# 
+
+
+# 
+
+
+
+# 
+
+
+
+# 
+
+
+
+# 
+
+
+# 
 
 
 
