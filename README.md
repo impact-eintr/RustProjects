@@ -1873,10 +1873,275 @@ fn main() {
 }
 ```
 
-## String
+### 所有权和借用规则
+- 不能在同一作用域内同时拥有可变和不可变引用
 
+``` rust
+fn main() {
+    let mut v = vec![1, 2, 3, 4, 5];
+    let first=  &v[0];
+    v.push(6);
+    println!("The first element is {}", first);
+}
+
+```
+
+### 遍历元素
+
+``` rust
+fn main() {
+    let mut v = vec![1, 2, 3, 4, 5];
+    for i in &mut v {
+        *i *= 10;
+    }
+
+    for i in v {
+        println!("{}", i);
+    }
+}
+
+```
+
+### 使用enum来存储多种数据类型
+- enum的变体可以附加不同类型的数据
+- enum的变体定义在同一个enum类型下
+
+``` rust
+enum SpreadsheetCell {
+    Int(i32),
+    Float(f64),
+    Text(String),
+}
+
+fn main() {
+    let row = vec![
+        SpreadsheetCell::Int(3),
+        SpreadsheetCell::Text(String::from("blue")),
+        SpreadsheetCell::Float(10.123),
+    ];
+}
+
+```
+
+## String
+### 更新String
+- push_str() 方法 把一个字符串切片附加到String
+
+``` rust
+fn main() {
+    let mut s = String::from("foo");
+    let s1 = String::from("bar");
+    s.push_str(&s1);
+    println!("{}, {}", s, s1);
+}
+
+```
+- push() 把单个字符附加到String
+
+- + 连接字符串
+  - 使用了类似这个签名的方法 `fn add(self, s: &str) -> String{ ... }`
+    - 标准库中的add方法使用了泛型
+    - 只能把&str添加到String
+    - 解引用强制转换(defer coercoin)
+
+- format! 连接多个字符串
+
+``` rust
+fn main() {
+    let s1 = String::from("tic");
+    let s2 = String::from("tac");
+    let s3 = String::from("toe");
+
+    let s3 = s1 + "-" + &s2 + "-" + &s3;
+    println!("{}", s3);
+}
+
+```
+
+
+``` rust
+fn main() {
+    let s1 = String::from("tic");
+    let s2 = String::from("tac");
+    let s3 = String::from("toe");
+
+    let s = format!("{}-{}-{}", s1, s2, s3);
+    println!("{}", s);
+}
+
+```
+
+### 访问String
+- Rust的字符串不支持索引语法访问
+类似go string
+
+### 切割String
+- 可以使用[] 和一个范围来创建字符串的切片
+  - 必须谨慎使用
+  - 如果切割时跨越了字符边界，出现就会panic
+
+### 遍历String的方法
+- 对于标量值: chars()
+- 对于字节: bytes()
+- 对于字形簇: 很复杂，标准库未提供
+
+### String不简单
+- Rust选择将正确处理String作为所有Rust程序的默认行为
+  - 程序员必须在处理utf-8数据之前投入更多的精力
+- 可以防止开发后期处理涉及非ASCII字符的错误
 
 ## HashMap
+- 键值对的形式存储数据，一个键对应一个值
+
+``` rust
+use std::collections::HashMap;
+
+fn main() {
+    let mut m: HashMap<String,i32> = HashMap::new();
+    m.insert(String::from("test"), 1);
+    println!("Hello, world!");
+}
+
+```
+
+### 另外一种创建HashMap的方式 collect方法
+- 在元素类型为tuple的Vector上使用collect方法,可以组建一个HashMap
+  - 要求Tuple有两个值 一个作为K 一个作为V
+  - collect方法可以吧数据整合成很多种集合类型 包括HashMap
+
+``` rust
+use std::collections::HashMap;
+
+fn main() {
+    let teams = vec![String::from("Blue"), String::from("Yellow")];
+    let intial_scores = vec![10, 50];
+
+    let scores: HashMap<_, _> = teams.iter().zip(intial_scores.iter()).collect();
+}
+
+```
+
+``` rust
+use std::collections::HashMap;
+
+fn main() {
+    let mut scores = HashMap::new();
+
+    scores.insert(String::from("Blue"), 10);
+    scores.insert(String::from("Yellow"), 10);
+
+    let team_name = String::from("Blue");
+    let score = scores.get(&team_name);
+
+    if let Some(s) = score {
+        println!("{}", s);
+    } else {
+        println!("team not exist");
+    }
+}
+
+```
+
+# 错误处理
+
+## panic! 不可恢复的错误
+- 当panic!宏执行：
+  - 你的程序会打印一个错误信息
+  - 展开(unwind) 清理调用栈(Stack)
+  - 退出程序
+
+``` toml
+[profile.release]
+panic = 'abort'
+```
+
+### 使用panic!产生的回溯信息
+- panic!可能出现在
+  - 我们写的代码中
+  - 我们依赖的代码
+- 可以通过调用panic!的函数的回溯信息来定位引起问题的代码
+- 通过设置环境变量`RUST_BACKTRACE`可以得到回溯信息
+- 为了获取带有调试信息的回溯，必须启用调试符号(不带--realease)
+
+## Result枚举
+- `enum Result<T, E> {
+  OK(T),
+  Err(E),
+}
+`
+- T 操作成功的时候， OK变体里返回的数据的类型
+- E 操作失败的时候 Err遍历里返回错误的类型
+
+### 处理Result的一种方式 match
+- 和Option枚举一样，Result及其变体也是由prelude带入作用域
+
+``` rust
+use std::fs::File;
+
+fn main() {
+    let f = File::open("hello.txt");
+
+    let f = match f {
+        Ok(file) => file,
+        Err(error) => {
+            panic!("Error opening file {:?}", error);
+        }
+    };
+}
+
+```
+
+### 匹配多种错误
+
+``` rust
+use std::fs::File;
+use std::io::ErrorKind;
+
+fn main() {
+    let f = File::open("hello.txt");
+
+    let f = match f {
+        Ok(file) => file,
+        Err(error) => match error.kind(){
+            ErrorKind::NotFound => match File::create("hello.txt") {
+                Ok(fc) => {
+                    println!("创建了一个新文件");
+                    fc
+                },
+                Err(e) => panic!("Error creating file: {:?}", e),
+            },
+            oe => panic!("Error opening file {:?}", oe),
+        }
+    };
+
+    let f = File::open("hello.txt").unwrap();
+
+    let f = File::open("hello.txt").expect("文件找不到");
+}
+
+```
+
+## 传播错误
+- 在函数中处理错误
+- 将错误返回给调用者
+
+
+
+
+# 
+
+
+# 
+
+
+# 
+
+
+# 
+
+
+# 
+
 
 # 
 
@@ -1888,25 +2153,6 @@ fn main() {
 # 
 
 
-# 
-
-
-# 
-
-
-# 
-
-
-# 
-
-
-
-# 
-
-
-# 
-
-
 
 # 
 
@@ -1924,11 +2170,13 @@ fn main() {
 
 
 
+# 
 
 
 
 
+# 
 
 
 
-
+# 

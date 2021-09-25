@@ -1,7 +1,13 @@
+enum SpreadsheetCell {
+    Int(i32),
+    Float(f64),
+    Text(String),
+}
+
 fn main() {
-    let v = vec![1, 2, 3, 4, 5];
-    match v.get(100) {
-        Some(third) => println!("{}", third),
-        None => println!("There is no third element"),
-    }
+    let row = vec![
+        SpreadsheetCell::Int(3),
+        SpreadsheetCell::Text(String::from("blue")),
+        SpreadsheetCell::Float(10.123),
+    ];
 }
